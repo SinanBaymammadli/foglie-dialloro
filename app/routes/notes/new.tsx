@@ -15,6 +15,7 @@ import { requireUserId } from "~/session.server";
 export async function action({ request }: ActionArgs) {
   const userId = await requireUserId(request);
 
+  // TODO: compress and resize file
   const uploadHandler = unstable_composeUploadHandlers(
     unstable_createFileUploadHandler({
       avoidFileConflicts: true,
@@ -34,8 +35,6 @@ export async function action({ request }: ActionArgs) {
   const body = formData.get("body");
   const image = formData.get("image") as NodeOnDiskFile | null;
   const imageUrl = image?.name;
-
-  console.log(imageUrl);
 
   if (typeof title !== "string" || title.length === 0) {
     return json(
