@@ -23,11 +23,12 @@ export async function action({ request, params }: ActionArgs) {
   invariant(params.noteId, "noteId not found");
   const note = await getNote({ userId, id: params.noteId });
 
+  await deleteNote({ userId, id: params.noteId });
+
   if (note?.imageUrl) {
     const filePath = `./public${note?.imageUrl}`;
     await deleteFile(filePath);
   }
-  await deleteNote({ userId, id: params.noteId });
 
   return redirect("/notes");
 }

@@ -3,26 +3,26 @@ import {
   unstable_composeUploadHandlers,
   unstable_createMemoryUploadHandler,
 } from "@remix-run/node";
+import { v4 as uuidv4 } from "uuid";
 import { unstable_createFileUploadHandler } from "@remix-run/node";
 import { unstable_parseMultipartFormData } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import * as React from "react";
-
+import mimeDb from "mime-db";
 import { createNote } from "~/models/note.server";
 import { requireUserId } from "~/session.server";
+import { compressFile } from "~/utils.server";
 
 export async function action({ request }: ActionArgs) {
   const userId = await requireUserId(request);
 
-  // TODO: compress and resize file
   const uploadHandler = unstable_composeUploadHandlers(
     unstable_createFileUploadHandler({
       avoidFileConflicts: true,
-      directory: "./public",
-      file: (file) => {
-        return file.filename;
-      },
+      maxPartSize: 100_000_000,
+      directory: "./public/uploads",
+      file: (file) => `${uuidv4()}.${mimeDb[file.contentType].extensions?.[0]}`,
     }),
     unstable_createMemoryUploadHandler()
   );
@@ -34,7 +34,7 @@ export async function action({ request }: ActionArgs) {
   const title = formData.get("title");
   const body = formData.get("body");
   const image = formData.get("image") as NodeOnDiskFile | null;
-  const imageUrl = image?.name;
+  const imageName = image?.name;
 
   if (typeof title !== "string" || title.length === 0) {
     return json(
@@ -50,18 +50,20 @@ export async function action({ request }: ActionArgs) {
     );
   }
 
-  if (typeof imageUrl !== "string" || imageUrl.length === 0) {
+  if (typeof imageName !== "string" || imageName.length === 0) {
     return json(
       { errors: { title: null, body: null, imageUrl: "Image error" } },
       { status: 400 }
     );
   }
 
+  await compressFile(`./public/uploads/${imageName}`);
+
   const note = await createNote({
     title,
     body,
     userId,
-    imageUrl: `/${imageUrl}`,
+    imageUrl: `/uploads/${imageName}`,
   });
 
   return redirect(`/notes/${note.id}`);
