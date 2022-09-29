@@ -1,4 +1,10 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionArgs, NodeOnDiskFile } from "@remix-run/node";
+import {
+  unstable_composeUploadHandlers,
+  unstable_createMemoryUploadHandler,
+} from "@remix-run/node";
+import { unstable_createFileUploadHandler } from "@remix-run/node";
+import { unstable_parseMultipartFormData } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import * as React from "react";
@@ -9,9 +15,27 @@ import { requireUserId } from "~/session.server";
 export async function action({ request }: ActionArgs) {
   const userId = await requireUserId(request);
 
-  const formData = await request.formData();
+  const uploadHandler = unstable_composeUploadHandlers(
+    unstable_createFileUploadHandler({
+      avoidFileConflicts: true,
+      directory: "./public",
+      file: (file) => {
+        return file.filename;
+      },
+    }),
+    unstable_createMemoryUploadHandler()
+  );
+
+  const formData = await unstable_parseMultipartFormData(
+    request,
+    uploadHandler
+  );
   const title = formData.get("title");
   const body = formData.get("body");
+  const image = formData.get("image") as NodeOnDiskFile | null;
+  const imageUrl = image?.name;
+
+  console.log(imageUrl);
 
   if (typeof title !== "string" || title.length === 0) {
     return json(
@@ -27,7 +51,19 @@ export async function action({ request }: ActionArgs) {
     );
   }
 
-  const note = await createNote({ title, body, userId });
+  if (typeof imageUrl !== "string" || imageUrl.length === 0) {
+    return json(
+      { errors: { title: null, body: null, imageUrl: "Image error" } },
+      { status: 400 }
+    );
+  }
+
+  const note = await createNote({
+    title,
+    body,
+    userId,
+    imageUrl: `/${imageUrl}`,
+  });
 
   return redirect(`/notes/${note.id}`);
 }
@@ -48,6 +84,7 @@ export default function NewNotePage() {
   return (
     <Form
       method="post"
+      encType="multipart/form-data"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -66,6 +103,7 @@ export default function NewNotePage() {
             aria-errormessage={
               actionData?.errors?.title ? "title-error" : undefined
             }
+            defaultValue="Test"
           />
         </label>
         {actionData?.errors?.title && (
@@ -87,6 +125,7 @@ export default function NewNotePage() {
             aria-errormessage={
               actionData?.errors?.body ? "body-error" : undefined
             }
+            defaultValue="Hello"
           />
         </label>
         {actionData?.errors?.body && (
@@ -94,6 +133,10 @@ export default function NewNotePage() {
             {actionData.errors.body}
           </div>
         )}
+      </div>
+
+      <div>
+        <input type="file" name="image" />
       </div>
 
       <div className="text-right">

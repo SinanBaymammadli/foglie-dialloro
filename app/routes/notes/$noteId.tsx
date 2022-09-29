@@ -5,6 +5,7 @@ import invariant from "tiny-invariant";
 
 import { deleteNote, getNote } from "~/models/note.server";
 import { requireUserId } from "~/session.server";
+import { deleteFile } from "~/utils.server";
 
 export async function loader({ request, params }: LoaderArgs) {
   const userId = await requireUserId(request);
@@ -20,7 +21,12 @@ export async function loader({ request, params }: LoaderArgs) {
 export async function action({ request, params }: ActionArgs) {
   const userId = await requireUserId(request);
   invariant(params.noteId, "noteId not found");
+  const note = await getNote({ userId, id: params.noteId });
 
+  if (note?.imageUrl) {
+    const filePath = `./public${note?.imageUrl}`;
+    await deleteFile(filePath);
+  }
   await deleteNote({ userId, id: params.noteId });
 
   return redirect("/notes");
@@ -33,6 +39,9 @@ export default function NoteDetailsPage() {
     <div>
       <h3 className="text-2xl font-bold">{data.note.title}</h3>
       <p className="py-6">{data.note.body}</p>
+
+      {data.note.imageUrl && <img src={data.note.imageUrl} alt="img" />}
+
       <hr className="my-4" />
       <Form method="post">
         <button

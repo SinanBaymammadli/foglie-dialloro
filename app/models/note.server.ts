@@ -11,7 +11,7 @@ export function getNote({
   userId: User["id"];
 }) {
   return prisma.note.findFirst({
-    select: { id: true, body: true, title: true },
+    select: { id: true, body: true, title: true, imageUrl: true },
     where: { id, userId },
   });
 }
@@ -28,13 +28,15 @@ export function createNote({
   body,
   title,
   userId,
-}: Pick<Note, "body" | "title"> & {
+  imageUrl,
+}: Pick<Note, "body" | "title" | "imageUrl"> & {
   userId: User["id"];
 }) {
   return prisma.note.create({
     data: {
       title,
       body,
+      imageUrl,
       user: {
         connect: {
           id: userId,
