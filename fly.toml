@@ -10,8 +10,8 @@ cmd = "start.sh"
 entrypoint = "sh"
 
 [mounts]
-source = "data"
-destination = "/data"
+source = ["data", "uploads"]
+destination = ["/data", "public/uploads"]
 
 [[services]]
 internal_port = 8_080
