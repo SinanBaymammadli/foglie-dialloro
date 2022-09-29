@@ -6,7 +6,6 @@ export default function Index() {
   const user = useOptionalUser();
   return (
     <main className="relative min-h-screen bg-white sm:flex sm:items-center sm:justify-center">
-      <img src="/test/test.jpeg" alt="" />
       <div className="mx-auto mt-10 max-w-sm sm:flex sm:max-w-none sm:justify-center">
         {user ? (
           <Link
