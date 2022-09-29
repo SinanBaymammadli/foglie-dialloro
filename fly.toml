@@ -1,4 +1,4 @@
-app = "foglie-dialloro-0f31"
+app = "foglie-dialloro"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = [ ]
