@@ -11,7 +11,7 @@ entrypoint = "sh"
 
 [mounts]
 source = "data"
-destination = "/"
+destination = "/public"
 
 [[services]]
 internal_port = 8_080
